@@ -1,9 +1,9 @@
+import { Readable } from 'node:stream';
 import { URL } from 'node:url';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { createWriteStream, createReadStream, statSync } from 'node:fs';
-import { exec, execFile } from 'child-process-promise';
+import { exec, execFile } from 'promisify-child-process';
 import tmp, { FileResult } from 'tmp-promise';
-import axios from 'axios';
 
 export interface PdfConvertOptions {
   /**
@@ -295,17 +295,20 @@ export class PdfConvert {
 
     if (typeof this.source === 'string') {
       if (/^https?:\/\//.test(this.source)) {
-        // if this is a web path then use axios to fetch the file
+        // if this is a web path then use fetch to get the file
         try {
-          const response = await axios.get(this.source, {
-            responseType: 'stream',
-          });
+          const response = await fetch(this.source);
+
+          if (!response.ok || !response.body) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
 
           const stream = createWriteStream(this.tmpFile.path);
-          response.data.pipe(stream);
+          const nodeStream = Readable.fromWeb(response.body);
+          nodeStream.pipe(stream);
 
           await new Promise((resolve, reject) => {
-            stream.on('finish', resolve);
+            stream.on('finish', () => resolve(undefined));
             stream.on('error', reject);
           });
         } catch (err) {

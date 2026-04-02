@@ -3,7 +3,7 @@ import nodeResolve from '@rollup/plugin-node-resolve';
 import copy from 'rollup-plugin-copy';
 
 export default {
-  external: ['axios', 'child-process-promise', 'tmp-promise'],
+  external: ['axios', 'child-process-promise', 'promisify-child-process', 'tmp-promise'],
   input: 'src/index.ts',
   plugins: [
     nodeResolve(),
